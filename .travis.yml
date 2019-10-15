@@ -1,6 +1,12 @@
 sudo: required
 services:
   - docker
+env:
+  global:
+    # get the SHA of latest commit
+    - GIT_SHA=$(git rev-parse HEAD)
+    # to disable the prompts of google cloud sdk.
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
 before_install:
   # take the encrypted version of file stored up on travis CI server and decrypt it.
@@ -12,5 +18,32 @@ before_install:
   # kubectl to apply our config files to make change in kubernetes cluster.
   - gcloud components update kubectl
   # Equivalent to IAM system, to give access to account we have to active service account
-  # 'activate-service-account' and provide credentials using 'service-account.json'
+  # 'activate-service-account' and provide credentials using decrypted 'service-account.json' file
   - gcloud auth activate-service-account --key-file service-account.json
+  # tell gcloud to work on this project 'fibonacciwebapp-kube'
+  - gcloud config set project fibonacciwebapp-kube
+  # specify the compute zone location
+  - gcloud config set compute/zone us-central1-a
+  # to give name of our kubernetes cluster
+  - gcloud container clusters get-credentials fibwebapp-k8s
+  # to log in to docker CLI.
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  # now we will give full path where my dockerfile and all files to build the
+  # images resides. In this case, we are in root directory, and we want to build
+  # image for client to test it.
+  # NOTE: You can also add tests for other images also like worker, server.
+  - docker build -t clienttest -f ./client/Dockerfile.dev ./client
+
+# series of commands which will run when our test execute. Add multiple tests
+# depending upon your needs.
+script:
+  - docker run -e CI=true clienttest npm run test
+
+deploy:
+  # There is no built-in provider for kubernetes on Travis CI, so we have to write
+  # script from scratch. That's why 'provider: script' and we have written script
+  # in deploy.sh file, only telling travis CI to run this script.
+  provider: script
+  script: bash ./deploy.sh
+  on:
+    branch: master
