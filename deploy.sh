@@ -7,7 +7,7 @@ docker build -t avinashk793/worker-app:latest  -t avinashk793/worker-app:$GIT_SH
 docker push avinashk793/cleint-app:latest
 docker push avinashk793/server-app:latest
 docker push avinashk793/worker-app:latest
-docker push avinashk793/cleint-app:$GIT_SHA
+docker push avinashk793/client-app:$GIT_SHA
 docker push avinashk793/server-app:$GIT_SHA
 docker push avinashk793/worker-app:$GIT_SHA
 
